@@ -1,42 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>tungtungtungsahur</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
-
-    <script>
-    window.fetch = (function(originalFetch){
-        return async function(url, options){
-            const response = await originalFetch(url, options);
-
-            if(typeof url === "string" && url.endsWith(".br")){
-                const compressed = new Uint8Array(await response.arrayBuffer());
-                const decompressed = fflate.decompressSync(compressed);
-
-                return new Response(decompressed, {
-                    headers: response.headers
-                });
-            }
-
-            return response;
-        };
-    })(window.fetch);
-    </script>
-
-    <script src="UnityLoader.js"></script>
-
-    <script>
-        var unityInstance = UnityLoader.instantiate("unityContainer", "ttt.json");
-    </script>
-
-    <style>
-        body { margin: 0; overflow: hidden; }
-        #unityContainer { width: 100vw; height: 100vh; }
-        canvas { width: 100% !important; height: 100% !important; }
-    </style>
+<meta charset="utf-8">
+<title>T cubed</title>
+<style>
+  body { margin: 0; overflow: hidden; background: black; }
+  canvas { width: 100vw; height: 100vh; display: block; }
+</style>
 </head>
+
 <body>
-<div id="unityContainer"></div>
+<canvas id="unity-canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("unity-canvas");
+const buildUrl = "";
+
+async function loadArrayBuffer(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed: " + url);
+  return await res.arrayBuffer();
+} 
+    
+(async () => {
+
+  console.log("Loading Unity assets...");
+
+  const data = await loadArrayBuffer("tungtung.data.unityweb.br");
+  const wasm = await loadArrayBuffer("tungtung.wasm.code.unityweb.br");
+  const framework = await loadArrayBuffer("tungtung.wasm.framework.unityweb.br");
+
+  window.Module = {
+    canvas: canvas,
+    wasmBinary: wasm,
+    preRun: [],
+    postRun: [],
+    print: console.log,
+    printErr: console.error,
+  };
+
+  const script = document.createElement("script");
+  script.src = "tungtung.wasm.framework.unityweb.br";
+
+  script.onerror = () => {
+    console.error("Framework failed to execute. This means Unity runtime glue is missing.");
+  };
+
+  document.body.appendChild(script);
+
+})();
+</script>
+
 </body>
 </html>
