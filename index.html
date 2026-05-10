@@ -2,15 +2,39 @@
 <html>
 <head>
     <title>tungtungtungsahur</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+
+    <script>
+    window.fetch = (function(originalFetch){
+        return async function(url, options){
+            const response = await originalFetch(url, options);
+
+            if(typeof url === "string" && url.endsWith(".br")){
+                const compressed = new Uint8Array(await response.arrayBuffer());
+                const decompressed = fflate.decompressSync(compressed);
+
+                return new Response(decompressed, {
+                    headers: response.headers
+                });
+            }
+
+            return response;
+        };
+    })(window.fetch);
+    </script>
+
     <script src="UnityLoader.js"></script>
+
     <script>
         var unityInstance = UnityLoader.instantiate("unityContainer", "ttt.json");
     </script>
+
     <style>
         body { margin: 0; overflow: hidden; }
         #unityContainer { width: 100vw; height: 100vh; }
         canvas { width: 100% !important; height: 100% !important; }
-</style>
+    </style>
 </head>
 <body>
 <div id="unityContainer"></div>
