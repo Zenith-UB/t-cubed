@@ -4,49 +4,54 @@
 <meta charset="utf-8">
 <title>T cubed</title>
 <style>
-  body { margin: 0; overflow: hidden; background: black; }
-  canvas { width: 100vw; height: 100vh; display: block; }
+body { margin: 0; background: black; color: white; font-family: sans-serif; }
+canvas { width: 100vw; height: 100vh; display: block; }
 </style>
 </head>
 
 <body>
-<canvas id="unity-canvas"></canvas>
+<canvas id="unity"></canvas>
+<div id="status" style="position:absolute;top:10px;left:10px;z-index:10"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/brotli-wasm@3.0.0/index.min.js"></script>
 
 <script>
-const canvas = document.getElementById("unity-canvas");
-const buildUrl = "";
+const status = (t) => document.getElementById("status").innerText = t;
 
-async function loadArrayBuffer(url) {
+const files = [
+  "tungtung.data.unityweb.br",
+  "tungtung.wasm.code.unityweb.br",
+  "tungtung.wasm.framework.unityweb.br"
+];
+
+async function fetchAndDecompress(url) {
+  status("Loading " + url);
+
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed: " + url);
-  return await res.arrayBuffer();
-} 
-    
+  const buf = new Uint8Array(await res.arrayBuffer());
+
+  const decompressed = BrotliDecode(buf);
+
+  return new Blob([decompressed]);
+}
+
+function BrotliDecode(input) {
+  return BrotliDecodeWASM(input);
+}
+
+let wasmReady = false;
+
 (async () => {
 
-  console.log("Loading Unity assets...");
+  status("Fetching + decompressing...");
 
-  const data = await loadArrayBuffer("tungtung.data.unityweb.br");
-  const wasm = await loadArrayBuffer("tungtung.wasm.code.unityweb.br");
-  const framework = await loadArrayBuffer("tungtung.wasm.framework.unityweb.br");
+  const blobs = await Promise.all(files.map(fetchAndDecompress));
 
-  window.Module = {
-    canvas: canvas,
-    wasmBinary: wasm,
-    preRun: [],
-    postRun: [],
-    print: console.log,
-    printErr: console.error,
-  };
+  const urls = blobs.map(b => URL.createObjectURL(b));
 
-  const script = document.createElement("script");
-  script.src = "tungtung.wasm.framework.unityweb.br";
+  console.log("Blobs created:", urls);
 
-  script.onerror = () => {
-    console.error("Framework failed to execute. This means Unity runtime glue is missing.");
-  };
-
-  document.body.appendChild(script);
+  status("Blobs ready (Unity runtime still required)");
 
 })();
 </script>
